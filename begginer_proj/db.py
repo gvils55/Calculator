@@ -1,5 +1,19 @@
+operator_dict = {
+        '+': (1, "both", True),
+        '-': (1, "both", True),
+        '*': (2, "both", True),
+        '/': (2, "both", True),
+        '^': (3, "both", True),
+        '@': (5, "both", True),
+        '$': (5, "both", True),
+        '&': (5, "both", True),
+        '%': (4, "both", True),
+        '~': (6, "left", True),
+        '!': (6, "right", False),
+        '#': (6, "right", False),
 
-import math
+}
+
 
 def add(x, y):
     return x + y
@@ -21,7 +35,7 @@ def divide(x, y):
 
 
 def power(x, y):
-    return math.pow(x, y)
+    return x**y
 
 
 def avg(x, y):
@@ -53,13 +67,19 @@ def azeret(x, y= None):
 def neg(x, y=None):
     return x*-1
 
+def digit_sum(x, y= None):
+    count = 0
+    while x > 0:
+        count += x % 10
+        x /= 10
+
 
 def default_operation():
     return "Invalid operator"
 
 
 def calc(operator, x, y):
-    operator_dict = {
+    operator_dict_function = {
         '+': add,
         '-': subtract,
         '*': multiply,
@@ -74,7 +94,7 @@ def calc(operator, x, y):
     }
 
     # Use get() method to retrieve the function for the given operator
-    operation = operator_dict.get(operator, lambda x, y: "Invalid operator")
+    operation = operator_dict_function.get(operator, lambda x, y: "Invalid operator")
 
     # Call the selected function
     result = operation(x, y)
