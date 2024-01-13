@@ -1,4 +1,4 @@
-from db_helper import *
+from db import *
 
 class invalid_symbol_placements(Exception):
     def __int__(self):
@@ -7,53 +7,62 @@ class invalid_symbol_placements(Exception):
         return "invalid symbol placement"
 
 
-
-def check_opr_placements(math_expr: list):
-    pass
-
-
-def handle_minuses(math_expr: list):
+def find_unary_minuses(math_expr: list):
     new_list = []
-    i = 0
+    for i in range(len(math_expr)):
+        if i == 0:
+            if math_expr[i] == '-':
+                new_list.append('u-')
+            else:
+                new_list.append(math_expr[i])
 
-    while i < len(math_expr):
-        new_list.append(math_expr[i])
+        elif math_expr[i] == '-' and math_expr[i-1] == '(':
+            new_list.append('u-')
 
-        if math_expr[i] in operator_dict or math_expr[i] == '(':
-            if len(math_expr) == i+1:
-                raise invalid_symbol_placements
+        elif math_expr[i] == '-' and math_expr[i-1] in operator_dict:
+            opr_tuple = operator_dict[math_expr[i-1]]
+            if opr_tuple[2] is True:
+                new_list.append('u-')
+            else:
+                new_list.append('-')
 
-            elif math_expr[i+1] == '-':
-                count = 0
-                opr = math_expr[i]
-                if opr == '(':
-                    can_be_with_opr = True
-                else:
-                    if opr == '-' and i == 0:
-                        new_list.pop()
-                    operator_tuple = operator_dict[opr]
-                    can_be_with_opr = operator_tuple[2]
+        elif math_expr[i] == '-':
+            new_list.append('-')
 
-                if not can_be_with_opr:
-                    new_list.append(math_expr[i+1])
-                    count = -1
-                j = i + 1
-                while j < len(math_expr)-1 and math_expr[j] == '-':
-                    count = count + 1
-                    j = j + 1
-
-                if isinstance(math_expr[j], float):
-                    if count % 2 != 0:
-                        math_expr[j] = math_expr[j] * -1
-                    new_list.append(math_expr[j])
-                    i = j
-                else:
-                    raise invalid_symbol_placements
-
-        i = i + 1
-
+        else:
+            new_list.append(math_expr[i])
     return new_list
 
+
+
+def remove_minuses(math_expr: list):
+    new_list = []
+    i = 0
+    while i < len(math_expr):
+        if math_expr[i] == 'u-':
+            count = 0
+            while i < len(math_expr) and math_expr[i] == 'u-':
+                count += 1
+                i += 1
+            if count % 2 == 1:
+                new_list.append("u-")
+        else:
+            new_list.append(math_expr[i])
+            i += 1
+    return new_list
+
+
+
+def handle_unary_minuses(math_expr: list):
+    unary_math = find_unary_minuses(math_expr)
+    removed = remove_minuses(unary_math)
+
+    for i in range(len(removed)):
+        if removed[i] == 'u-':
+            if i != 0 and removed[i-1] in operator_dict:
+                removed[i] = '~'
+
+    return removed
 
 
 def has_valid_parenthesis(math_expr: list):
@@ -107,13 +116,32 @@ def has_higher_equal_precedence(operator1, operator2):
     return operator_tuple1[0] >= operator_tuple2[0]
 
 
+def check_operator_placements(math_expr: list):
+
+    for i in range(len(math_expr)):
+        try:
+            if math_expr[i] in operator_dict:
+                operator_tuple = operator_dict[math_expr[i]]
+                if operator_tuple[1] == "right":
+                    if math_expr[i-1] in operator_dict:
+                        raise invalid_symbol_placements
+                    elif i < len(math_expr)-1 and math_expr[i+1] == math_expr[i]:
+                        raise invalid_symbol_placements
+
+                elif operator_tuple[1] == "left":
+                    if math_expr[i + 1] in operator_dict:
+                        raise invalid_symbol_placements
+                    elif i > 0 and math_expr[i - 1] == math_expr[i]:
+                        raise invalid_symbol_placements
+        except Exception as ae:
+            raise invalid_symbol_placements
+
 
 def to_postfix(exp_list: list):
     post_list = []
     operator_stack = []
 
     for obj in exp_list:
-
         if obj in operator_dict:
 
             while operator_stack and operator_stack[-1] != '(' and has_higher_equal_precedence(operator_stack[-1], obj):
@@ -154,16 +182,19 @@ def calculate_postfix(math_expr: list):
         if math_expr[i] in operator_dict:
             operator_tuple = operator_dict[math_expr[i]]
             opr_dir = operator_tuple[1]
-            if opr_dir != "both":
-                result = calc(math_expr[i], math_expr[i - 1], None)
-                math_expr[i - 1] = result
-                math_expr.pop(i)
+            try:
+                if opr_dir != "both":
+                    result = calc(math_expr[i], math_expr[i - 1], None)
+                    math_expr[i - 1] = result
+                    math_expr.pop(i)
 
-            else:
-                result = calc(math_expr[i], math_expr[i - 2], math_expr[i - 1])
-                math_expr[i - 2] = result
-                math_expr.pop(i)
-                math_expr.pop(i - 1)
+                else:
+                    result = calc(math_expr[i], math_expr[i - 2], math_expr[i - 1])
+                    math_expr[i - 2] = result
+                    math_expr.pop(i)
+                    math_expr.pop(i - 1)
+            except Exception as ae:
+                raise ValueError
 
             i = 0
         i = i + 1
@@ -171,6 +202,7 @@ def calculate_postfix(math_expr: list):
     if len(math_expr) > 1:
         raise invalid_symbol_placements
     return result
+
 
 
 
@@ -182,7 +214,8 @@ def get_expression():
             math_list = from_string_to_list(math_expr)
             if has_valid_symbols(math_list):
                 if has_valid_parenthesis(math_list):
-                    new_list = handle_minuses(math_list)
+                    new_list = handle_unary_minuses(math_list)
+                    check_operator_placements(new_list)
                     return new_list
                 else:
                     print("invalid usage of parenthesis")
@@ -199,11 +232,11 @@ def get_expression():
 
 
 def main():
-    print(float('2.'))
     while True:
         try:
             math_expr = get_expression()
             print(math_expr)
+
             posted_exp = to_postfix(math_expr)
             print(posted_exp)
             result = calculate_postfix(posted_exp)
@@ -212,9 +245,10 @@ def main():
             print("\nlogged out of console")
             break
         except invalid_symbol_placements as e:
-            print("invalid placement of operands")
-        except Exception as e:
-            print("invalid usage of parenthesis")
+            print("invalid operands placement")
+        except ValueError as e:
+            print("invalid operators placement")
+
         print()
 
 

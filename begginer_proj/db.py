@@ -1,6 +1,7 @@
 operator_dict = {
         '+': (1, "both", True),
         '-': (1, "both", True),
+        'u-': (1, "left", True),
         '*': (2, "both", True),
         '/': (2, "both", True),
         '^': (3, "both", True),
@@ -13,7 +14,6 @@ operator_dict = {
         '#': (6, "right", False),
 
 }
-
 
 def add(x, y):
     return x + y
@@ -31,7 +31,7 @@ def divide(x, y):
     if y != 0:
         return x / y
     else:
-        return "Cannot divide by zero"
+        raise ValueError
 
 
 def power(x, y):
@@ -61,6 +61,8 @@ def min(x, y):
 def azeret(x, y= None):
     if x == 0:
         return 1
+    if x < 0:
+        raise ValueError
     return x * azeret(x-1)
 
 
@@ -68,10 +70,13 @@ def neg(x, y=None):
     return x*-1
 
 def digit_sum(x, y= None):
+    if x < 0:
+        raise ValueError
     count = 0
     while x > 0:
         count += x % 10
         x /= 10
+    return count
 
 
 def default_operation():
@@ -90,6 +95,7 @@ def calc(operator, x, y):
         '&': min,
         '%': remain,
         '~': neg,
+        'u-': neg,
         '!': azeret
     }
 
