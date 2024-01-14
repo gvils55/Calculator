@@ -73,9 +73,13 @@ def digit_sum(x, y= None):
     if x < 0:
         raise ValueError
     count = 0
-    while x > 0:
-        count += x % 10
-        x /= 10
+    num = str(x)
+    l1 = []
+    for i in range(len(num)):
+        if num[i] != '.':
+            l1.append(num[i])
+    for j in range(len(l1)):
+        count += int(l1[j])
     return count
 
 
@@ -96,7 +100,8 @@ def calc(operator, x, y):
         '%': remain,
         '~': neg,
         'u-': neg,
-        '!': azeret
+        '!': azeret,
+        '#': digit_sum
     }
 
     # Use get() method to retrieve the function for the given operator

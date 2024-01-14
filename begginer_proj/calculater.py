@@ -56,6 +56,7 @@ def remove_minuses(math_expr: list):
 def handle_unary_minuses(math_expr: list):
     unary_math = find_unary_minuses(math_expr)
     removed = remove_minuses(unary_math)
+    check_opr_placements(removed)
 
     for i in range(len(removed)):
         if removed[i] == 'u-':
@@ -116,25 +117,13 @@ def has_higher_equal_precedence(operator1, operator2):
     return operator_tuple1[0] >= operator_tuple2[0]
 
 
-def check_operator_placements(math_expr: list):
+def check_opr_placements(math_expr: list):
 
     for i in range(len(math_expr)):
-        try:
-            if math_expr[i] in operator_dict:
-                operator_tuple = operator_dict[math_expr[i]]
-                if operator_tuple[1] == "right":
-                    if math_expr[i-1] in operator_dict:
-                        raise invalid_symbol_placements
-                    elif i < len(math_expr)-1 and math_expr[i+1] == math_expr[i]:
-                        raise invalid_symbol_placements
+        if math_expr[i] == '~':
+            if i < len(math_expr)-1 and math_expr[i+1] == math_expr[i] or i > 0 and math_expr[i-1] in operator_dict:
+                raise invalid_symbol_placements
 
-                elif operator_tuple[1] == "left":
-                    if math_expr[i + 1] in operator_dict:
-                        raise invalid_symbol_placements
-                    elif i > 0 and math_expr[i - 1] == math_expr[i]:
-                        raise invalid_symbol_placements
-        except Exception as ae:
-            raise invalid_symbol_placements
 
 
 def to_postfix(exp_list: list):
@@ -144,7 +133,7 @@ def to_postfix(exp_list: list):
     for obj in exp_list:
         if obj in operator_dict:
 
-            while operator_stack and operator_stack[-1] != '(' and has_higher_equal_precedence(operator_stack[-1], obj):
+            while operator_stack and operator_stack[-1] != '(' and has_higher_equal_precedence(operator_stack[-1], obj) and post_list:
                 op1 = operator_stack.pop()
                 post_list.append(op1)
             operator_stack.append(obj)
@@ -166,10 +155,13 @@ def to_postfix(exp_list: list):
 
             operator_stack.pop();
 
+
     while operator_stack:
         op1 = operator_stack.pop()
         post_list.append(op1)
 
+    if ('(' or ')') in post_list:
+        raise Exception
     return post_list
 
 
@@ -193,6 +185,11 @@ def calculate_postfix(math_expr: list):
                     math_expr[i - 2] = result
                     math_expr.pop(i)
                     math_expr.pop(i - 1)
+
+                print(result)
+
+            except TypeError as ae:
+                raise TypeError
             except Exception as ae:
                 raise ValueError
 
@@ -213,12 +210,11 @@ def get_expression():
         try:
             math_list = from_string_to_list(math_expr)
             if has_valid_symbols(math_list):
-                if has_valid_parenthesis(math_list):
-                    new_list = handle_unary_minuses(math_list)
-                    check_operator_placements(new_list)
-                    return new_list
-                else:
-                    print("invalid usage of parenthesis")
+                #if has_valid_parenthesis(math_list):
+                new_list = handle_unary_minuses(math_list)
+                return new_list
+                #else:
+                    #print("invalid usage of parenthesis")
             else:
                 print("invalid symbols in the math expression")
 
@@ -232,13 +228,14 @@ def get_expression():
 
 
 def main():
+
     while True:
         try:
             math_expr = get_expression()
             print(math_expr)
-
             posted_exp = to_postfix(math_expr)
             print(posted_exp)
+
             result = calculate_postfix(posted_exp)
             print(result)
         except KeyboardInterrupt as e:
@@ -246,8 +243,12 @@ def main():
             break
         except invalid_symbol_placements as e:
             print("invalid operands placement")
-        except ValueError as e:
+        except TypeError as e:
             print("invalid operators placement")
+        except ValueError as ae:
+            print("cant do calculation on an infinite number")
+        except Exception as ae:
+            print("invalid usage of parenthesis")
 
         print()
 
