@@ -1,10 +1,22 @@
 from db import *
 
-class invalid_symbol_placements(Exception):
+class invalid_opr_placements(Exception):
     def __int__(self):
         pass
     def __str__(self):
         return "invalid symbol placement"
+
+class invalid_parenthesis_placements(Exception):
+    def __int__(self):
+        pass
+    def __str__(self):
+        return "invalid parenthesis placement"
+
+class invalid_symbols(Exception):
+    def __int__(self):
+        pass
+    def __str__(self):
+        return "invalid symbols"
 
 
 def find_unary_minuses(math_expr: list):
@@ -56,7 +68,7 @@ def remove_minuses(math_expr: list):
 def handle_unary_minuses(math_expr: list):
     unary_math = find_unary_minuses(math_expr)
     removed = remove_minuses(unary_math)
-    check_opr_placements(removed)
+    check_symbols_and_placements(removed)
 
     for i in range(len(removed)):
         if removed[i] == 'u-':
@@ -64,27 +76,6 @@ def handle_unary_minuses(math_expr: list):
                 removed[i] = '~'
 
     return removed
-
-
-def has_valid_parenthesis(math_expr: list):
-    right_p_count = 0
-    left_p_count = 0
-    for obj in math_expr:
-        if obj == '(':
-            right_p_count = right_p_count+1
-        elif obj == ')':
-            left_p_count = left_p_count+1
-    return left_p_count == right_p_count
-
-
-
-def has_valid_symbols(math_expr: list):
-    for obj in math_expr:
-        if (not isinstance(obj, float)) and obj not in operator_dict:
-            if obj != '(' and obj != ')':
-                return False
-    return True
-
 
 
 def from_string_to_list(math_expr: str):
@@ -117,13 +108,30 @@ def has_higher_equal_precedence(operator1, operator2):
     return operator_tuple1[0] >= operator_tuple2[0]
 
 
-def check_opr_placements(math_expr: list):
+def check_symbols_and_placements(math_expr: list):
 
     for i in range(len(math_expr)):
-        if math_expr[i] == '~':
-            if i < len(math_expr)-1 and math_expr[i+1] == math_expr[i] or i > 0 and math_expr[i-1] in operator_dict:
-                raise invalid_symbol_placements
+        if math_expr[i] in operator_dict:
+            opr_tuple = operator_dict[math_expr[i]]
+            if opr_tuple[1] == "right":
+                if i+1< len(math_expr) and math_expr[i+1] not in operator_dict:
+                    raise invalid_opr_placements
 
+            elif math_expr[i] == '~':
+                if (i < len(math_expr)-1 and math_expr[i+1] == math_expr[i]) or (i > 0 and math_expr[i-1] in operator_dict):
+                    raise invalid_opr_placements
+
+        elif math_expr[i] == '(':
+            if i > 0 and math_expr[i-1] not in operator_dict and math_expr[i-1] != '(':
+                raise invalid_parenthesis_placements
+
+        elif math_expr[i] == ')':
+            if i+1 < len(math_expr) and math_expr[i+1] not in operator_dict and math_expr[i-1] != ')':
+                raise invalid_parenthesis_placements
+
+        else:
+            if not isinstance(math_expr[i], float):
+                raise invalid_symbols
 
 
 def to_postfix(exp_list: list):
@@ -153,7 +161,10 @@ def to_postfix(exp_list: list):
                 op1 = operator_stack.pop()
                 post_list.append(op1)
 
-            operator_stack.pop();
+            if operator_stack:
+                operator_stack.pop();
+            else:
+                raise invalid_parenthesis_placements
 
 
     while operator_stack:
@@ -161,7 +172,7 @@ def to_postfix(exp_list: list):
         post_list.append(op1)
 
     if ('(' or ')') in post_list:
-        raise Exception
+        raise invalid_parenthesis_placements
     return post_list
 
 
@@ -186,20 +197,20 @@ def calculate_postfix(math_expr: list):
                     math_expr.pop(i)
                     math_expr.pop(i - 1)
 
-                print(result)
 
-            except TypeError as ae:
+            except TypeError:
                 raise TypeError
-            except Exception as ae:
-                raise ValueError
+            except OverflowError:
+                raise OverflowError
+            except ValueError:
+                raise Exception
 
             i = 0
         i = i + 1
 
     if len(math_expr) > 1:
-        raise invalid_symbol_placements
+        raise invalid_opr_placements
     return result
-
 
 
 
@@ -209,21 +220,20 @@ def get_expression():
 
         try:
             math_list = from_string_to_list(math_expr)
-            if has_valid_symbols(math_list):
-                #if has_valid_parenthesis(math_list):
-                new_list = handle_unary_minuses(math_list)
-                return new_list
-                #else:
-                    #print("invalid usage of parenthesis")
-            else:
-                print("invalid symbols in the math expression")
+            new_list = handle_unary_minuses(math_list)
+            return new_list
 
-        except ValueError as e:
+        except ValueError:
             print("invalid number input")
 
-        except invalid_symbol_placements as e:
-            print("invalid operators placement")
+        except invalid_opr_placements:
+            print("1)invalid operators placement")
 
+        except invalid_parenthesis_placements:
+            print("1)invalid parenthesis placement")
+
+        except invalid_symbols:
+            print("invalid symbols in the math expression")
         print()
 
 
@@ -233,26 +243,33 @@ def main():
         try:
             math_expr = get_expression()
             print(math_expr)
+
             posted_exp = to_postfix(math_expr)
             print(posted_exp)
 
             result = calculate_postfix(posted_exp)
             print(result)
-        except KeyboardInterrupt as e:
+
+        except KeyboardInterrupt:
             print("\nlogged out of console")
             break
-        except invalid_symbol_placements as e:
+
+        except TypeError:
+            print("2)invalid operators placement")
+
+        except OverflowError:
+            print("calculation on a number that is to big")
+
+        except invalid_parenthesis_placements:
+            print("invalid parenthesis placement")
+
+        except invalid_opr_placements:
             print("invalid operands placement")
-        except TypeError as e:
-            print("invalid operators placement")
-        except ValueError as ae:
-            print("cant do calculation on an infinite number")
-        except Exception as ae:
-            print("invalid usage of parenthesis")
+
+        except Exception:
+            print("impossible  calculation")
 
         print()
-
-
 
 
 if __name__ == '__main__':

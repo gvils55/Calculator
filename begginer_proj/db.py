@@ -59,11 +59,14 @@ def min(x, y):
 
 
 def azeret(x, y= None):
-    if x == 0:
-        return 1
-    if x < 0:
-        raise ValueError
-    return x * azeret(x-1)
+    try:
+        if x == 0:
+            return 1
+        if x < 0:
+            raise ValueError
+        return x * azeret(x-1)
+    except RecursionError:
+        raise OverflowError
 
 
 def neg(x, y=None):
