@@ -1,3 +1,30 @@
+class invalid_operators_placements(Exception):
+    def __int__(self):
+        pass
+    def __str__(self):
+        return "invalid symbol placement"
+
+class invalid_parenthesis_placements(Exception):
+    def __int__(self):
+        pass
+    def __str__(self):
+        return "invalid parenthesis placement"
+
+class invalid_symbols(Exception):
+    def __int__(self):
+        pass
+    def __str__(self):
+        return "invalid symbols"
+
+
+class invalid_operands_placements(Exception):
+    def __int__(self):
+        pass
+    def __str__(self):
+        return "invalid symbol placement"
+
+
+
 operator_dict = {
         '+': (1, "both", True),
         '-': (1, "both", True),
@@ -173,5 +200,7 @@ def calc(operator, x, y):
     # Use get() method to retrieve the function for the given operator
     operation = operator_dict_function.get(operator, lambda x, y: "Invalid operator")
     # Call the selected function
+    if x in operator_dict or y in operator_dict:
+        raise invalid_operators_placements
     result = operation(x, y)
     return result
